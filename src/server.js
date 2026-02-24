@@ -13,8 +13,8 @@ console.log('JWT_REFRESH_SECRET exists:', !!process.env.JWT_REFRESH_SECRET);
 console.log('ADMIN_SECRET_KEY exists:', !!process.env.ADMIN_SECRET_KEY);
 console.log('========================');
 
-//const app = require('./app');
-const app = require('./app.minimal');
+const app = require('./app');
+//const app = require('./app.minimal'); for debugging
 const sequelize = require('./config/database');
 // REDIS REMOVED - Not using it
 const { logger } = require('./utils/logger');
