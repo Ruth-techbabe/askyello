@@ -18,58 +18,6 @@ const adminRoutes = require('./routes/admin.routes');
 const app = express();
 
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      process.env.FRONTEND_URL,
-      'http://localhost:5173',
-      'http://localhost:3000',
-      'http://127.0.0.1:5173',
-    ].filter(Boolean);
-
-    // Allow requests with no origin (Postman, mobile apps, cURL)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
-
-//  Apply CORS once
-app.use(cors(corsOptions));
-
-// Security and parsing middleware
-app.use(helmet());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser());
-app.use(compression());
-
-//  Session configuration
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || 'fallback-secret-change-in-production',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: parseInt(process.env.SESSION_MAX_AGE || '86400000'),
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-    },
-  })
-);
-
-//  Passport initialization (both needed for Google OAuth with sessions)
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Rate limiting
-app.use(apiLimiter);
-
-// Health check endpoint 
 app.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -79,7 +27,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Root endpoint
 app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
@@ -92,7 +39,57 @@ app.get('/', (req, res) => {
   });
 });
 
-//  API routes
+// CORS Configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+    ].filter(Boolean);
+
+    // Allow requests with no origin (Postman, cURL, mobile apps)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.use(helmet());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
+app.use(compression());
+
+// Session configuration
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'fallback-secret-for-development',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: parseInt(process.env.SESSION_MAX_AGE || '86400000'),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    },
+  })
+);
+
+// Passport initialization
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Rate limiting
+app.use(apiLimiter);
+
+
+// API ROUTES
 const API_PREFIX = `/api/${process.env.API_VERSION || 'v1'}`;
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
@@ -102,7 +99,7 @@ app.use(`${API_PREFIX}/search`, searchRoutes);
 app.use(`${API_PREFIX}/chatbot`, chatbotRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes); 
 
-// Error handlers (must be last)
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 
