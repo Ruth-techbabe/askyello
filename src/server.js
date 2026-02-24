@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-//  LOG ENVIRONMENT VARIABLES AT STARTUP (VERY FIRST)
 console.log('=== ENVIRONMENT CHECK ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
 console.log('PORT:', process.env.PORT);
@@ -16,21 +15,19 @@ console.log('========================');
 
 const app = require('./app');
 const sequelize = require('./config/database');
-const { connectRedis } = require('./config/redis');
+// REDIS REMOVED - Not using it
 const { logger } = require('./utils/logger');
 const cron = require('node-cron');
 const reviewProcessingJob = require('./jobs/reviewProcessing.job');
 
 const PORT = process.env.PORT || 5000;
 
-//  HANDLE UNCAUGHT ERRORS
 process.on('uncaughtException', (error) => {
   console.error(' UNCAUGHT EXCEPTION:', error);
   logger.error('UNCAUGHT EXCEPTION:', error);
   process.exit(1);
 });
 
-// HANDLE UNHANDLED PROMISE REJECTIONS
 process.on('unhandledRejection', (reason, promise) => {
   console.error(' UNHANDLED REJECTION at:', promise);
   console.error('Reason:', reason);
@@ -38,11 +35,9 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-//  START SERVER WITH ENHANCED ERROR LOGGING
 const startServer = async () => {
   try {
-    // Database connection
-    console.log('Connecting to database...');
+    console.log(' Connecting to database...');
     logger.info('Attempting database connection...');
     
     await sequelize.authenticate();
@@ -50,7 +45,6 @@ const startServer = async () => {
     console.log('Database connected successfully');
     logger.info('Database connection established');
 
-    // Database sync in development
     if (process.env.NODE_ENV === 'development') {
       console.log(' Syncing database schema...');
       await sequelize.sync({ alter: true });
@@ -58,19 +52,11 @@ const startServer = async () => {
       logger.info('Database synced');
     }
 
-    // Redis connection
-    console.log(' Connecting to Redis...');
-    try {
-      await connectRedis();
-      console.log(' Redis connected');
-      logger.info('Redis connection established');
-    } catch (redisError) {
-      console.warn(' Redis connection failed (non-fatal):', redisError.message);
-      logger.warn('Redis connection failed (continuing without Redis):', redisError);
-    }
+    // REDIS SKIPPED
+    console.log(' Redis disabled - caching unavailable (not critical)');
+    logger.info('Redis disabled - running without cache');
 
-    // Cron job for review processing
-    console.log(' Setting up cron jobs...');
+    console.log('Setting up cron jobs...');
     cron.schedule('0 * * * *', () => {
       logger.info('Running scheduled review processing job');
       reviewProcessingJob.processPendingReviews();
@@ -78,13 +64,12 @@ const startServer = async () => {
     console.log('Cron jobs scheduled');
     logger.info('Cron jobs initialized');
 
-    // Start Express server
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(' ================================');
-      console.log(` Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
+      console.log('================================');
+      console.log(`Server running on port ${PORT}`);
+      console.log(` Environment: ${process.env.NODE_ENV}`);
       console.log(` API: http://localhost:${PORT}/api/${process.env.API_VERSION || 'v1'}`);
-      console.log(' ================================');
+      console.log('================================');
       
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV}`);
@@ -110,7 +95,6 @@ const startServer = async () => {
   }
 };
 
-// GRACEFUL SHUTDOWN HANDLERS
 process.on('SIGTERM', async () => {
   console.log(' SIGTERM received, shutting down gracefully');
   logger.info('SIGTERM received, shutting down gracefully');
@@ -128,7 +112,7 @@ process.on('SIGTERM', async () => {
 });
 
 process.on('SIGINT', async () => {
-  console.log(' SIGINT received, shutting down gracefully');
+  console.log('SIGINT received, shutting down gracefully');
   logger.info('SIGINT received, shutting down gracefully');
   
   try {
@@ -142,6 +126,5 @@ process.on('SIGINT', async () => {
   
   process.exit(0);
 });
-
 
 startServer();
