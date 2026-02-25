@@ -24,6 +24,7 @@
     "@googlemaps/google-maps-services-js": "^3.4.2",
     "axios": "^1.13.5",
     "bcryptjs": "^3.0.3",
+    "cli": "^1.0.1",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
