@@ -65,35 +65,34 @@ const startServer = async () => {
     console.log('Cron jobs scheduled');
     logger.info('Cron jobs initialized');
 
-    app.listen(PORT, '0.0.0.0', (err) => {
-  if (err) {
-    console.error(' Failed to bind to port:', err);
-    process.exit(1);
-  }
+//     app.listen(PORT, '0.0.0.0', (err) => {
+//   if (err) {
+//     console.error(' Failed to bind to port:', err); for debugging railway
+//     process.exit(1);
+//   }
   
-  const address = this.address();
-  console.log(' ================================');
-  console.log(` Server successfully bound to:`);
-  console.log(`   Address: ${address.address}`);
-  console.log(`   Port: ${address.port}`);
-  console.log(`   Family: ${address.family}`);
-  console.log(' ================================');
+//   const address = this.address();
+//   console.log(' ================================');
+//   console.log(` Server successfully bound to:`);
+//   console.log(`   Address: ${address.address}`);
+//   console.log(`   Port: ${address.port}`);
+//   console.log(`   Family: ${address.family}`);
+//   console.log(' ================================');
   
-  logger.info(`Server running on ${address.address}:${address.port}`);
-});
+//   logger.info(`Server running on ${address.address}:${address.port}`);
+// });
 
-
-    // app.listen(PORT, '0.0.0.0', () => {
-    //   console.log('================================');
-    //   console.log(`Server running on port ${PORT}`);
-    //   console.log(` Environment: ${process.env.NODE_ENV}`);
-    //   console.log(` API: http://localhost:${PORT}/api/${process.env.API_VERSION || 'v1'}`);
-    //   console.log('================================');
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log('================================');
+      console.log(`Server running on port ${PORT}`);
+      console.log(` Environment: ${process.env.NODE_ENV}`);
+      console.log(` API: http://localhost:${PORT}/api/${process.env.API_VERSION || 'v1'}`);
+      console.log('================================');
       
-    //   logger.info(`Server running on port ${PORT}`);
-    //   logger.info(`Environment: ${process.env.NODE_ENV}`);
-    //   logger.info(`API: http://localhost:${PORT}/api/${process.env.API_VERSION || 'v1'}`);
-    // });
+      logger.info(`Server running on port ${PORT}`);
+      logger.info(`Environment: ${process.env.NODE_ENV}`);
+      logger.info(`API: http://localhost:${PORT}/api/${process.env.API_VERSION || 'v1'}`);
+    });
   } catch (error) {
     console.error(' ================================');
     console.error(' SERVER STARTUP FAILED');
