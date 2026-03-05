@@ -1,40 +1,41 @@
 const brevo = require('@getbrevo/brevo');
 
+// Initialize API client OUTSIDE the class
+const apiInstance = new brevo.TransactionalEmailsApi();
+const apiKey = apiInstance.authentications['apiKey'];
+
 class EmailService {
   constructor() {
     // Check if Brevo API key is configured
     if (!process.env.BREVO_API_KEY) {
-      console.warn(' Brevo API key not configured. Emails will not be sent.');
+      console.warn('Brevo API key not configured. Emails will not be sent.');
       this.apiInstance = null;
       return;
     }
 
-    // Initialize Brevo API
-    this.apiInstance = new brevo.TransactionalEmailsApi();
-    this.apiInstance.setApiKey(
-      brevo.TransactionalEmailsApiApiKeys.apiKey,
-      process.env.BREVO_API_KEY
-    );
+    // Set API key 
+    apiKey.apiKey = process.env.BREVO_API_KEY;
+    this.apiInstance = apiInstance;
 
     // Verify connection on startup
     this.verifyConnection();
   }
 
   async verifyConnection() {
+    if (!this.apiInstance) return;
+
     try {
       const accountApi = new brevo.AccountApi();
-      accountApi.setApiKey(
-        brevo.AccountApiApiKeys.apiKey,
-        process.env.BREVO_API_KEY
-      );
+      const accountApiKey = accountApi.authentications['apiKey'];
+      accountApiKey.apiKey = process.env.BREVO_API_KEY;
+      
       await accountApi.getAccount();
       console.log('Brevo API connected successfully');
     } catch (error) {
-      console.error('Brevo API connection failed:', error.message);
+      console.error(' Brevo API connection failed:', error.message);
     }
   }
-
-  // Send email with both link and OTP (EXACT same HTML template as before!)
+  // Send email with both link and OTP 
   async sendVerificationEmailWithOTP(email, name, verificationToken, otp, businessName) {
     if (!this.apiInstance) {
       console.warn(' Email service not configured.');
