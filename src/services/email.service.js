@@ -1,40 +1,43 @@
-const brevo = require('@getbrevo/brevo');
-
-// Initialize API client OUTSIDE the class
-const apiInstance = new brevo.TransactionalEmailsApi();
-const apiKey = apiInstance.authentications['apiKey'];
+const axios = require('axios');
 
 class EmailService {
   constructor() {
     // Check if Brevo API key is configured
     if (!process.env.BREVO_API_KEY) {
-      console.warn('Brevo API key not configured. Emails will not be sent.');
-      this.apiInstance = null;
+      console.warn(' Brevo API key not configured. Emails will not be sent.');
+      this.brevoApiKey = null;
       return;
     }
 
-    // Set API key 
-    apiKey.apiKey = process.env.BREVO_API_KEY;
-    this.apiInstance = apiInstance;
+    this.brevoApiKey = process.env.BREVO_API_KEY;
+    this.brevoApiUrl = 'https://api.brevo.com/v3/smtp/email';
 
     // Verify connection on startup
     this.verifyConnection();
   }
 
   async verifyConnection() {
-    if (!this.apiInstance) return;
+    if (!this.brevoApiKey) return;
 
     try {
-      const accountApi = new brevo.AccountApi();
-      const accountApiKey = accountApi.authentications['apiKey'];
-      accountApiKey.apiKey = process.env.BREVO_API_KEY;
-      
-      await accountApi.getAccount();
-      console.log('Brevo API connected successfully');
+      // Test API connection by getting account info
+      const response = await axios.get('https://api.brevo.com/v3/account', {
+        headers: {
+          'api-key': this.brevoApiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+      console.log(' Brevo API connected successfully');
+      console.log(`   Account: ${response.data.email}`);
     } catch (error) {
       console.error(' Brevo API connection failed:', error.message);
+      if (error.response) {
+        console.error('   Status:', error.response.status);
+        console.error('   Error:', error.response.data);
+      }
     }
   }
+
   // Send email with both link and OTP 
   async sendVerificationEmailWithOTP(email, name, verificationToken, otp, businessName) {
     if (!this.apiInstance) {
