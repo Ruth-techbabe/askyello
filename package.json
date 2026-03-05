@@ -21,6 +21,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@getbrevo/brevo": "^4.0.1",
     "@googlemaps/google-maps-services-js": "^3.4.2",
     "axios": "^1.13.5",
     "bcryptjs": "^3.0.3",
