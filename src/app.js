@@ -16,6 +16,7 @@ const chatbotRoutes = require('./routes/chatbot.routes');
 const adminRoutes = require('./routes/admin.routes'); 
 
 const app = express();
+app.set('trust proxy', 1);
 
 // REQUEST LOGGING - FIRST!
 app.use((req, res, next) => {
