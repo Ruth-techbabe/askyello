@@ -14,7 +14,7 @@ console.log('ADMIN_SECRET_KEY exists:', !!process.env.ADMIN_SECRET_KEY);
 console.log('========================');
 
 const app = require('./app');
-//const app = require('./app.minimal'); for debugging
+
 const sequelize = require('./config/database');
 // REDIS REMOVED - Not using it
 const { logger } = require('./utils/logger');
@@ -22,6 +22,10 @@ const cron = require('node-cron');
 const reviewProcessingJob = require('./jobs/reviewProcessing.job');
 
 const PORT = process.env.PORT || 5000;
+//Force email service to initialize at startup
+const emailService = require('./services/email.service');
+console.log('Email service loaded:', emailService.isConfigured ? 'CONFIGURED ✅' : 'NOT CONFIGURED ❌');
+
 
 process.on('uncaughtException', (error) => {
   console.error(' UNCAUGHT EXCEPTION:', error);
@@ -65,22 +69,6 @@ const startServer = async () => {
     console.log('Cron jobs scheduled');
     logger.info('Cron jobs initialized');
 
-//     app.listen(PORT, '0.0.0.0', (err) => {
-//   if (err) {
-//     console.error(' Failed to bind to port:', err); for debugging railway
-//     process.exit(1);
-//   }
-  
-//   const address = this.address();
-//   console.log(' ================================');
-//   console.log(` Server successfully bound to:`);
-//   console.log(`   Address: ${address.address}`);
-//   console.log(`   Port: ${address.port}`);
-//   console.log(`   Family: ${address.family}`);
-//   console.log(' ================================');
-  
-//   logger.info(`Server running on ${address.address}:${address.port}`);
-// });
 
     app.listen(PORT, '0.0.0.0', () => {
       console.log('================================');
