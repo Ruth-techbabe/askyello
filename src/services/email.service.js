@@ -2,6 +2,18 @@ const axios = require('axios');
 
 class EmailService {
   constructor() {
+    // CRITICAL DEBUG - Remove after fixing
+  console.log('===========================================');
+  console.log('EMAIL SERVICE CONSTRUCTOR CALLED');
+  console.log('===========================================');
+  console.log('Environment variables check:');
+  console.log('  NODE_ENV:', process.env.NODE_ENV);
+  console.log('  BREVO_API_KEY exists:', !!process.env.BREVO_API_KEY);
+  console.log('  BREVO_API_KEY length:', process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.length : 0);
+  console.log('  BREVO_API_KEY first 20 chars:', process.env.BREVO_API_KEY ? process.env.BREVO_API_KEY.substring(0, 20) + '...' : 'NULL');
+  console.log('  EMAIL_FROM:', process.env.EMAIL_FROM);
+  console.log('  EMAIL_SENDER_NAME:', process.env.EMAIL_SENDER_NAME);
+  console.log('===========================================');
     // Check if Brevo API key is configured
     if (!process.env.BREVO_API_KEY) {
       console.warn(' Brevo API key not configured. Emails will not be sent.');
