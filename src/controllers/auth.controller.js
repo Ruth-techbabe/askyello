@@ -405,16 +405,28 @@ const loginWithEmail = async (req, res) => {
 
 // ===== PROVIDER LOGIN =====
 const loginProvider = async (req, res) => {
+  console.log('===========================================');
+  console.log(' PROVIDER LOGIN ATTEMPT');
+  console.log('===========================================');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  
   try {
     const { businessName, password } = req.body;
 
+    console.log('Business Name received:', businessName ? `"${businessName}"` : 'MISSING');
+    console.log('Password received:', password ? `"${password}"` : 'MISSING');
+    console.log('Business Name length:', businessName?.length || 0);
+    console.log('Password length:', password?.length || 0);
+
     if (!businessName || !password) {
+      console.log('Missing credentials');
       return res.status(400).json({
         success: false,
         message: 'Business name and password are required',
       });
     }
 
+    console.log('Searching for provider with business name:', `"${businessName}"`);
     const provider = await Provider.findOne({
       where: { businessName },
       include: [
@@ -426,7 +438,28 @@ const loginProvider = async (req, res) => {
       ],
     });
 
-    if (!provider || !provider.owner) {
+    if (!provider) {
+      console.log('Provider not found with business name:', `"${businessName}"`);
+      console.log('Checking if provider exists with similar name...');
+      
+      // Try to find similar names
+      const allProviders = await Provider.findAll({
+        attributes: ['businessName'],
+        limit: 10,
+      });
+      console.log('Existing business names in DB:', allProviders.map(p => `"${p.businessName}"`).join(', '));
+      
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid business name or password',
+      });
+    }
+
+    console.log(' Provider found:', provider.businessName);
+    console.log('   Provider ID:', provider.id);
+
+    if (!provider.owner) {
+      console.log(' Provider has no owner user!');
       return res.status(401).json({
         success: false,
         message: 'Invalid business name or password',
@@ -434,16 +467,37 @@ const loginProvider = async (req, res) => {
     }
 
     const user = provider.owner;
+    console.log(' User/Owner found:');
+    console.log('   User ID:', user.id);
+    console.log('   Email:', user.email);
+    console.log('   Name:', user.name);
+    console.log('   Email Verified:', user.emailVerified);
+    console.log('   Is Active:', user.isActive);
+    console.log('   Has Password:', !!user.password);
+    console.log('   Password starts with:', user.password?.substring(0, 10) || 'NO PASSWORD');
 
     if (!user.emailVerified) {
+      console.log(' Email not verified');
       return res.status(403).json({
         success: false,
         message: 'Please verify your email before logging in. Check your inbox.',
       });
     }
 
+    console.log('Comparing passwords...');
+    console.log('   Input password:', `"${password}"`);
+    console.log('   Input password length:', password.length);
+    console.log('   Stored hash length:', user.password?.length || 0);
+    
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('Password comparison result:', isPasswordValid ? 'MATCH' : 'NO MATCH');
+    
     if (!isPasswordValid) {
+      console.log(' Password comparison failed');
+      console.log('   This could mean:');
+      console.log('   - Wrong password entered');
+      console.log('   - Password case sensitivity issue');
+      console.log('   - Password has extra spaces');
       return res.status(401).json({
         success: false,
         message: 'Invalid business name or password',
@@ -451,14 +505,17 @@ const loginProvider = async (req, res) => {
     }
 
     if (!user.isActive) {
+      console.log(' Account deactivated');
       return res.status(403).json({
         success: false,
         message: 'Account is deactivated',
       });
     }
 
+    console.log('Updating last login time...');
     await User.update({ lastLogin: new Date() }, { where: { id: user.id } });
 
+    console.log('Generating JWT tokens...');
     const token = jwt.sign(
       {
         userId: user.id,
@@ -476,6 +533,12 @@ const loginProvider = async (req, res) => {
       { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d' }
     );
 
+    console.log('===========================================');
+    console.log(' LOGIN SUCCESSFUL!');
+    console.log('   Business:', provider.businessName);
+    console.log('   Email:', user.email);
+    console.log('===========================================');
+
     res.json({
       success: true,
       message: 'Login successful',
@@ -486,12 +549,16 @@ const loginProvider = async (req, res) => {
         role: user.role,
         businessName: provider.businessName,
         providerId: provider.id,
+        otpVerified: provider.otpVerified, //  for OTP check
       },
       token,
       refreshToken,
     });
   } catch (error) {
-    console.error('Provider login error:', error);
+    console.error('===========================================');
+    console.error('PROVIDER LOGIN ERROR:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('===========================================');
     res.status(500).json({
       success: false,
       message: 'Login failed',
