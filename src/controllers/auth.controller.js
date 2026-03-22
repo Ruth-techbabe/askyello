@@ -652,54 +652,89 @@ const getCurrentUser = async (req, res) => {
 
 //  VERIFY EMAIL
 const verifyEmail = async (req, res) => {
+  console.log('===========================================');
+  console.log(' EMAIL VERIFICATION ENDPOINT CALLED');
+  console.log('===========================================');
+  console.log('Token received:', req.query.token ? 'YES' : 'NO');
+  console.log('FRONTEND_URL env var:', process.env.FRONTEND_URL);
+  
   try {
     const { token } = req.query;
 
     if (!token) {
+      console.log(' ERROR: No token provided');
       return res.status(400).json({
         success: false,
         message: 'Verification token is required',
       });
     }
 
+    console.log('Verifying JWT token...');
     let decoded;
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Token decoded successfully');
+      console.log('   User ID:', decoded.userId);
+      console.log('   Email:', decoded.email);
     } catch (error) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid or expired verification token',
-      });
+      console.log('Token verification failed:', error.message);
+      // FIXED: Changed to /login/vendor
+      const redirectUrl = `${process.env.FRONTEND_URL}/login/vendor?error=token_expired&message=${encodeURIComponent('Verification link expired')}`;
+      console.log(' Redirecting to:', redirectUrl);
+      return res.redirect(redirectUrl);
     }
 
+    console.log('Looking up user in database...');
     const user = await User.findByPk(decoded.userId);
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found',
-      });
+      console.log(' User not found for ID:', decoded.userId);
+      //  FIXED: Changed to /login/vendor
+      const redirectUrl = `${process.env.FRONTEND_URL}/login/vendor?error=user_not_found&message=${encodeURIComponent('User not found')}`;
+      console.log(' Redirecting to:', redirectUrl);
+      return res.redirect(redirectUrl);
     }
+
+    console.log('User found:', user.email);
+    console.log('   Email already verified?', user.emailVerified);
 
     if (user.emailVerified) {
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/vendor/login?verified=true&message=Email already verified`
-      );
+      console.log(' Email already verified, redirecting...');
+      //  FIXED: Changed to /login/vendor
+      const redirectUrl = `${process.env.FRONTEND_URL}/login/vendor?verified=true&message=${encodeURIComponent('Email already verified')}`;
+      console.log('🔗 Redirecting to:', redirectUrl);
+      return res.redirect(redirectUrl);
     }
 
+    console.log('Marking email as verified...');
     user.emailVerified = true;
     await user.save();
+    console.log(' Email verification saved to database');
 
+    console.log('Looking up provider...');
     const provider = await Provider.findOne({ where: { userId: user.id } });
+    console.log(' Provider found:', provider?.businessName || 'No provider');
 
-    res.redirect(
-      `${process.env.FRONTEND_URL}/vendor/login?verified=true&business=${encodeURIComponent(
-        provider?.businessName || ''
-      )}`
-    );
+    const businessName = provider?.businessName || '';
+    // FIXED: Changed to /login/vendor
+    const redirectUrl = `${process.env.FRONTEND_URL}/login/vendor?verified=true&business=${encodeURIComponent(businessName)}&message=${encodeURIComponent('Email verified! Please login.')}`;
+    
+    console.log('===========================================');
+    console.log('VERIFICATION SUCCESSFUL!');
+    console.log('REDIRECTING TO:', redirectUrl);
+    console.log('===========================================');
+
+    res.redirect(redirectUrl);
   } catch (error) {
-    console.error('Email verification error:', error);
-    res.redirect(`${process.env.FRONTEND_URL}/vendor/login?error=verification_failed`);
+    console.error('===========================================');
+    console.error(' VERIFICATION ERROR:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('===========================================');
+    
+    // FIXED: Changed to /login/vendor
+    const redirectUrl = `${process.env.FRONTEND_URL}/login/vendor?error=verification_failed&message=${encodeURIComponent('Verification failed. Please try again.')}`;
+    console.log('🔗 Error redirect to:', redirectUrl);
+    res.redirect(redirectUrl);
   }
 };
 
