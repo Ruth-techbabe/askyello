@@ -6,54 +6,92 @@ const sequelize = require('../config/database');
 
 // ===== ADMIN LOGIN =====
 const loginAsAdmin = async (req, res) => {
+  console.log('===========================================');
+  console.log(' ADMIN LOGIN ATTEMPT');
+  console.log('===========================================');
+  console.log('Request body:', JSON.stringify(req.body, null, 2));
+  
   try {
     const { email, password, adminKey } = req.body;
 
+    console.log('Email received:', email ? `"${email}"` : 'MISSING');
+    console.log('Password received:', password ? 'YES (hidden)' : 'MISSING');
+    console.log('Admin Key received:', adminKey ? `"${adminKey}"` : 'MISSING');
+    console.log('Expected Admin Key from env:', process.env.ADMIN_SECRET_KEY ? `"${process.env.ADMIN_SECRET_KEY}"` : 'NOT SET');
+
     if (!email || !password || !adminKey) {
+      console.log(' Missing required fields');
       return res.status(400).json({
         success: false,
         message: 'Email, password and admin key are required',
       });
     }
 
+    console.log('Checking admin key match...');
+    console.log('   Provided:', adminKey);
+    console.log('   Expected:', process.env.ADMIN_SECRET_KEY);
+    console.log('   Match:', adminKey === process.env.ADMIN_SECRET_KEY);
+
     if (adminKey !== process.env.ADMIN_SECRET_KEY) {
+      console.log(' Admin key mismatch!');
       return res.status(403).json({
         success: false,
         message: 'Invalid admin credentials',
       });
     }
+
+    console.log(' Admin key verified');
+    console.log('Looking up user with email:', email);
 
     const user = await User.findOne({ where: { email } });
 
     if (!user || !user.password) {
+      console.log(' User not found or no password set');
       return res.status(403).json({
         success: false,
         message: 'Invalid admin credentials',
       });
     }
 
+    console.log(' User found:', user.email);
+    console.log('   User ID:', user.id);
+    console.log('   User Role:', user.role);
+    console.log('   Is Active:', user.isActive);
+
+    console.log('Comparing passwords...');
     const isPasswordValid = await bcrypt.compare(password, user.password);
+    console.log('Password match:', isPasswordValid ? ' YES' : ' NO');
+
     if (!isPasswordValid) {
+      console.log(' Password mismatch');
       return res.status(403).json({
         success: false,
         message: 'Invalid admin credentials',
       });
     }
 
+    console.log('Checking user role...');
     if (user.role !== 'admin') {
+      console.log('User is not an admin!');
+      console.log('   Expected role: admin');
+      console.log('   Actual role:', user.role);
       return res.status(403).json({
         success: false,
         message: 'Invalid admin credentials',
       });
     }
+
+    console.log('User is admin');
 
     if (!user.isActive) {
+      console.log('Admin account is deactivated');
       return res.status(403).json({
         success: false,
         message: 'Admin account is deactivated',
       });
     }
 
+    console.log('Generating tokens...');
     const token = jwt.sign(
       {
         userId: user.id,
@@ -74,6 +112,12 @@ const loginAsAdmin = async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
+    console.log('===========================================');
+    console.log(' ADMIN LOGIN SUCCESSFUL!');
+    console.log('   Email:', user.email);
+    console.log('   Role:', user.role);
+    console.log('===========================================');
+
     res.json({
       success: true,
       message: 'Admin login successful',
@@ -88,14 +132,16 @@ const loginAsAdmin = async (req, res) => {
       expiresIn: process.env.ADMIN_TOKEN_EXPIRES_IN || '8h',
     });
   } catch (error) {
-    console.error('Admin login error:', error);
+    console.error('===========================================');
+    console.error(' ADMIN LOGIN ERROR:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('===========================================');
     res.status(500).json({
       success: false,
       message: 'Login failed',
     });
   }
 };
-
 // ===== ADMIN CHANGE PASSWORD =====
 const changeAdminPassword = async (req, res) => {
   try {
