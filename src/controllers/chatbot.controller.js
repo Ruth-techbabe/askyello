@@ -87,16 +87,16 @@ Instructions:
     console.log('   Max tokens: 150');
     
     const startTime = Date.now();
-    
+    //changed to gpt-3.5-turbo
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
-      ],
-      max_tokens: 150,
-      temperature: 0.7,
-    });
+  model: 'gpt-3.5-turbo',  
+  messages: [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: message },
+  ],
+  max_tokens: 150,
+  temperature: 0.7,
+});
 
     const endTime = Date.now();
     console.log(`OpenAI API responded in ${endTime - startTime}ms`);
