@@ -5,6 +5,6 @@ const { chatbotRateLimit } = require('../middleware/rateLimit.middleware');
 
 const router = express.Router();
 
-router.post('/chat', optionalAuth, chatbotRateLimit, chatbotController.chatWithBot);
+router.post('/', optionalAuth, chatbotRateLimit, chatbotController.chatWithBot);
 
 module.exports = router;
